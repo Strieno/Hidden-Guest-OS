@@ -3,6 +3,7 @@ import { Sparkles, ShieldAlert, ChevronLeft, RotateCcw } from 'lucide-react';
 import { useStore } from '../../hooks/useStore';
 import { useI18n, type TKey } from '../../lib/i18n';
 import { SCENARIOS, type ScenarioDef, type ScenarioOption, type OptionEffects } from '../../data/scenarios';
+import { DAILY_CHALLENGES } from '../../data/daily';
 import { sfx } from '../../lib/sound';
 
 type State =
@@ -28,6 +29,14 @@ export function Simulator() {
   React.useEffect(() => {
     if (state.phase === 'run') lastDaily.current = pendingDaily;
   }, [state, pendingDaily]);
+
+  // Auto-launch the daily challenge scenario when the simulator opens for a challenge
+  React.useEffect(() => {
+    if (state.phase !== 'pick' || !pendingDaily) return;
+    const ch = DAILY_CHALLENGES.find((c) => c.id === pendingDaily);
+    if (ch && ch.target === 'simulator') start(ch.scenarioId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingDaily, state.phase]);
 
   const choose = (opt: ScenarioOption) => {
     if (state.phase !== 'run' || state.chosen) return;

@@ -39,50 +39,53 @@ export function Employees() {
     setOpen(true);
   };
 
-  if (!data.employees.length) {
-    return (
-      <EmptyState
-        icon={<Users size={36} />}
-        title={t('emp.title')}
-        text={t('emp.desc')}
-        action={<button className="btn primary" onClick={() => setOpen(true)}><Plus size={16} /> {t('emp.add')}</button>}
-      />
-    );
-  }
+  const openAdd = () => { setEditing(null); setName(''); setRole('موظف استقبال'); setRoleEn('Front Desk Agent'); setNotes(''); setOpen(true); };
 
   return (
     <div className="page">
       <PageTitle over="EMPLOYEES" title={t('emp.title')} text={t('emp.desc')} />
-      <button className="btn primary add-top" onClick={() => { setEditing(null); setName(''); setRole('موظف استقبال'); setRoleEn('Front Desk Agent'); setNotes(''); setOpen(true); }}><Plus size={16} /> {t('emp.add')}</button>
-      <div className="emp-grid">
-        {data.employees.map((e) => {
-          const stats = computeReadiness(data.assessments, data.questions, e.id);
-          const lv = levelFromXp(e.xp, lang);
-          const active = currentEmployee?.id === e.id;
-          return (
-            <article key={e.id} className={`card emp-card ${active ? 'active' : ''}`}>
-              <span className="avatar" style={{ background: e.color }}>{e.name.charAt(0)}</span>
-              <h3>{e.name}</h3>
-              <small>{lang === 'ar' ? e.role : e.roleEn}</small>
-              <div className="emp-meta">
-                <span>{t('readiness')} <b>{stats.overall}%</b></span>
-                <span>Lv {lv.level} · {e.xp} XP</span>
-                <span>{t('streak')} {e.streak} {t('days')}</span>
-              </div>
-              <Progress value={stats.overall} tone={stats.overall >= 80 ? 'green' : 'gold'} />
-              <div className="emp-actions">
-                {active ? (
-                  <span className="badge badge-gold">{t('emp.select')} ✓</span>
-                ) : (
-                  <button className="btn small" onClick={() => selectEmployee(e.id)}>{t('emp.switch')}</button>
-                )}
-                <button className="icon-btn" onClick={() => openEdit(e.id)} aria-label="edit"><Pencil size={15} /></button>
-                <button className="icon-btn danger" onClick={() => setConfirmDel(e.id)} aria-label="delete"><Trash2 size={15} /></button>
-              </div>
-            </article>
-          );
-        })}
-      </div>
+
+      {!data.employees.length ? (
+        <EmptyState
+          icon={<Users size={36} />}
+          title={t('emp.title')}
+          text={t('emp.desc')}
+          action={<button className="btn primary" onClick={openAdd}><Plus size={16} /> {t('emp.add')}</button>}
+        />
+      ) : (
+        <>
+          <button className="btn primary add-top" onClick={openAdd}><Plus size={16} /> {t('emp.add')}</button>
+          <div className="emp-grid">
+            {data.employees.map((e) => {
+              const stats = computeReadiness(data.assessments, data.questions, e.id);
+              const lv = levelFromXp(e.xp, lang);
+              const active = currentEmployee?.id === e.id;
+              return (
+                <article key={e.id} className={`card emp-card ${active ? 'active' : ''}`}>
+                  <span className="avatar" style={{ background: e.color }}>{e.name.charAt(0)}</span>
+                  <h3>{e.name}</h3>
+                  <small>{lang === 'ar' ? e.role : e.roleEn}</small>
+                  <div className="emp-meta">
+                    <span>{t('readiness')} <b>{stats.overall}%</b></span>
+                    <span>Lv {lv.level} · {e.xp} XP</span>
+                    <span>{t('streak')} {e.streak} {t('days')}</span>
+                  </div>
+                  <Progress value={stats.overall} tone={stats.overall >= 80 ? 'green' : 'gold'} />
+                  <div className="emp-actions">
+                    {active ? (
+                      <span className="badge badge-gold">{t('emp.select')} ✓</span>
+                    ) : (
+                      <button className="btn small" onClick={() => selectEmployee(e.id)}>{t('emp.switch')}</button>
+                    )}
+                    <button className="icon-btn" onClick={() => openEdit(e.id)} aria-label="edit"><Pencil size={15} /></button>
+                    <button className="icon-btn danger" onClick={() => setConfirmDel(e.id)} aria-label="delete"><Trash2 size={15} /></button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       <Modal open={open} onClose={() => setOpen(false)} title={editing ? t('emp.name') : t('emp.add')}>
         <div className="form">

@@ -3,6 +3,7 @@ import { Phone, ShieldAlert, ChevronLeft, RotateCcw, Volume2 } from 'lucide-reac
 import { useStore } from '../../hooks/useStore';
 import { useI18n, type TKey } from '../../lib/i18n';
 import { PHONE_SCENARIOS, type PhoneScenario, type PhoneOption, type PhoneEffects } from '../../data/phoneScenarios';
+import { DAILY_CHALLENGES } from '../../data/daily';
 import { sfx } from '../../lib/sound';
 
 const AXES = ['greeting', 'hotel', 'employee', 'listening', 'accuracy', 'language', 'closing'] as const;
@@ -25,6 +26,17 @@ export function PhoneSim() {
   React.useEffect(() => {
     if (state.phase !== 'pick') lastDaily.current = pendingDaily;
   }, [state, pendingDaily]);
+
+  // Auto-launch the daily challenge call when the simulator opens for a challenge
+  React.useEffect(() => {
+    if (state.phase !== 'pick' || !pendingDaily) return;
+    const ch = DAILY_CHALLENGES.find((c) => c.id === pendingDaily);
+    if (ch && ch.target === 'phone') {
+      setScenarioId(ch.scenarioId);
+      setState({ phase: 'ring' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingDaily, state.phase]);
 
   React.useEffect(() => {
     // when entering ring phase, play ring sound
