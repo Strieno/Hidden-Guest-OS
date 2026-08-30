@@ -105,11 +105,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 </div>
               </>
             ) : (
-              <div>
-                <small>{t('header.employee')}</small>
-                <b>—</b>
-                <p><i className="dot-warn" /> {t('emp.select')}</p>
-              </div>
+              <button className="profile-empty" onClick={() => { setView('employees'); setMobileOpen(false); }}>
+                <span className="avatar">+</span>
+                <div>
+                  <small>{t('header.employee')}</small>
+                  <b>{t('emp.add')}</b>
+                  <p><i className="dot-warn" /> {t('emp.select')}</p>
+                </div>
+              </button>
             )}
           </div>
           <nav className="side-nav">

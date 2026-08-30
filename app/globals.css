@@ -31,6 +31,11 @@ button:disabled{opacity:.4;cursor:not-allowed}input,select,textarea{font:inherit
 .profile .avatar{flex:0 0 40px;width:40px;height:40px;display:grid;place-items:center;border-radius:50%;font-weight:bold;color:white;font-size:17px}
 .profile small{color:#ffffff77;font-size:11px}.profile b{display:block;font-size:14px;margin-top:2px}
 .profile p{display:flex;gap:6px;align-items:center;color:#e0c477;font-size:10px;margin:4px 0 0}
+.profile-empty{display:flex;gap:10px;align-items:center;width:100%;text-align:start;border-radius:9px;transition:background .15s}
+.profile-empty:hover{background:#ffffff0d}
+.profile-empty .avatar{background:#c8a45d33;color:#e0c477}
+.profile-empty small,.profile-empty b,.profile-empty p{color:#ffffff99}
+.profile-empty b{color:#e0c477}
 .dot-warn{width:7px;height:7px;border-radius:50%;background:#e0c477;display:inline-block}
 .side-nav{display:flex;flex-direction:column;gap:2px;margin-top:14px}
 .side-nav button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:9px;color:#ffffffb0;font-size:13px;text-align:start;transition:background .15s}

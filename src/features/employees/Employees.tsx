@@ -15,6 +15,16 @@ export function Employees() {
   const [notes, setNotes] = React.useState('');
   const [editing, setEditing] = React.useState<string | null>(null);
   const [confirmDel, setConfirmDel] = React.useState<string | null>(null);
+  const didAutoOpen = React.useRef(false);
+
+  // First-run helper: when there are no employees yet, open the creation form automatically
+  React.useEffect(() => {
+    if (!data.employees.length && !open && !didAutoOpen.current) {
+      didAutoOpen.current = true;
+      openAdd();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.employees.length]);
 
   const submit = () => {
     if (editing) {

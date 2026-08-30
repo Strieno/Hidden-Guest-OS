@@ -1,5 +1,6 @@
 // Lightweight WebAudio sound effects — no audio files required.
 // Respects browser autoplay policies by lazily creating the context on first user gesture.
+// Every call is defensive: audio must NEVER break application logic.
 
 let ctx: AudioContext | null = null;
 let enabled = true;
@@ -9,31 +10,40 @@ export function setSoundEnabled(on: boolean): void {
 }
 
 function ensureCtx(): AudioContext | null {
-  if (typeof window === 'undefined') return null;
-  if (!ctx) {
-    const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AC) return null;
-    ctx = new AC();
+  try {
+    if (typeof window === 'undefined') return null;
+    if (!ctx) {
+      const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AC) return null;
+      ctx = new AC();
+    }
+    if (ctx.state === 'suspended') void ctx.resume().catch(() => undefined);
+    return ctx;
+  } catch {
+    ctx = null;
+    return null;
   }
-  if (ctx.state === 'suspended') void ctx.resume();
-  return ctx;
 }
 
 function tone(freq: number, start: number, dur: number, type: OscillatorType = 'sine', gain = 0.08): void {
-  const c = ensureCtx();
-  if (!c) return;
-  const osc = c.createOscillator();
-  const g = c.createGain();
-  osc.type = type;
-  osc.frequency.value = freq;
-  const t0 = c.currentTime + start;
-  g.gain.setValueAtTime(0.0001, t0);
-  g.gain.exponentialRampToValueAtTime(gain, t0 + 0.01);
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  osc.connect(g);
-  g.connect(c.destination);
-  osc.start(t0);
-  osc.stop(t0 + dur + 0.02);
+  try {
+    const c = ensureCtx();
+    if (!c) return;
+    const osc = c.createOscillator();
+    const g = c.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    const t0 = c.currentTime + start;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(g);
+    g.connect(c.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.02);
+  } catch {
+    // never let audio break the app
+  }
 }
 
 export const sfx = {
