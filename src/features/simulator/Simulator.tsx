@@ -4,12 +4,13 @@ import { useStore } from '../../hooks/useStore';
 import { useI18n, type TKey } from '../../lib/i18n';
 import { SCENARIOS, type ScenarioDef, type ScenarioOption, type OptionEffects } from '../../data/scenarios';
 import { DAILY_CHALLENGES } from '../../data/daily';
+import { scenarioScore } from '../../lib/engine';
 import { sfx } from '../../lib/sound';
 
 type State =
   | { phase: 'pick' }
   | { phase: 'run'; scenario: ScenarioDef; stageIdx: number; chosen: ScenarioOption | null; totals: OptionEffects; critical: number }
-  | { phase: 'done'; scenario: ScenarioDef; totals: OptionEffects; critical: number; satisfaction: number; score: number; passed: boolean; xp: number };
+  | { phase: 'done'; scenario: ScenarioDef; totals: OptionEffects; critical: number; axes: Record<string, number | null>; score: number; passed: boolean; xp: number };
 
 const AXES = ['service', 'communication', 'accuracy', 'satisfaction', 'compliance'] as const;
 
@@ -69,19 +70,20 @@ export function Simulator() {
   };
 
   const finish = (scenario: ScenarioDef, totals: OptionEffects, critical: number) => {
-    const satisfaction = clamp(50 + totals.satisfaction + Math.round((totals.service + totals.communication) / 2));
-    const accuracy = clamp(50 + totals.accuracy + totals.compliance / 2);
-    const communication = clamp(50 + totals.communication);
-    const compliance = clamp(50 + totals.compliance);
-    const score = clamp(50 + Math.round((totals.service + totals.communication + totals.accuracy + totals.satisfaction + totals.compliance) / 2));
-    const passed = !(critical > 0 || satisfaction < 30);
+    // Precise scoring: per-axis 0-100 (perfect run = 100%, all-worst = 0%), final = mean of scored axes
+    const stages = scenario.stages as unknown as Array<{ options: Array<{ effects: Record<string, number> }> }>;
+    const { axes, score } = scenarioScore(totals as unknown as Record<string, number>, stages, AXES);
+    const categories: Record<string, number> = {};
+    for (const [k, v] of Object.entries(axes)) if (v !== null) categories[k] = v;
+    const passed = !(critical > 0 || score < 60);
     const res = recordSimSession({
       scenarioId: scenario.id,
       score,
-      satisfaction,
-      accuracy,
-      communication,
-      compliance,
+      satisfaction: axes.satisfaction ?? 50,
+      accuracy: axes.accuracy ?? 50,
+      communication: axes.communication ?? 50,
+      compliance: axes.compliance ?? 50,
+      categories,
       criticalMistakes: critical,
       passed,
     });
@@ -92,7 +94,7 @@ export function Simulator() {
       toast(`${tr('challenge.done')} · +25 XP`);
     }
     if (passed) sfx.complete(); else sfx.incorrect();
-    setState({ phase: 'done', scenario, totals, critical, satisfaction, score, passed, xp: res.xp });
+    setState({ phase: 'done', scenario, totals, critical, axes, score, passed, xp: res.xp });
   };
 
   if (state.phase === 'pick') {
@@ -117,7 +119,7 @@ export function Simulator() {
   }
 
   if (state.phase === 'done') {
-    const { scenario, satisfaction, score, critical, passed, xp } = state;
+    const { scenario, axes, score, critical, passed, xp } = state;
     return (
       <div className="page">
         <PageTitle over="RESULT" title={t('sim.result')} text={lang === 'ar' ? scenario.titleAr : scenario.titleEn} />
@@ -125,11 +127,11 @@ export function Simulator() {
           <strong>{score}%</strong>
           <h2>{passed ? (lang === 'ar' ? 'ممتاز — خدمة احترافية' : 'Excellent — professional service') : (lang === 'ar' ? 'يحتاج مراجعة' : 'Needs review')}</h2>
           <div className="axis-grid">
-            <Axis label={t('sim.service')} v={clamp(50 + state.totals.service)} />
-            <Axis label={t('sim.communication')} v={clamp(50 + state.totals.communication)} />
-            <Axis label={t('sim.accuracy')} v={clamp(50 + state.totals.accuracy)} />
-            <Axis label={t('sim.satisfaction')} v={satisfaction} />
-            <Axis label={t('sim.compliance')} v={clamp(50 + state.totals.compliance)} />
+            <Axis label={t('sim.service')} v={axes.service} />
+            <Axis label={t('sim.communication')} v={axes.communication} />
+            <Axis label={t('sim.accuracy')} v={axes.accuracy} />
+            <Axis label={t('sim.satisfaction')} v={axes.satisfaction} />
+            <Axis label={t('sim.compliance')} v={axes.compliance} />
           </div>
           {critical > 0 && <p className="sim-critical">⚠ {t('sim.critical')} × {critical}</p>}
           <p className="xp-gain">+{xp} XP</p>
@@ -196,10 +198,6 @@ function addEff(a: OptionEffects, b: OptionEffects): OptionEffects {
   return { service: a.service + b.service, communication: a.communication + b.communication, accuracy: a.accuracy + b.accuracy, satisfaction: a.satisfaction + b.satisfaction, compliance: a.compliance + b.compliance };
 }
 
-function clamp(v: number): number {
-  return Math.max(0, Math.min(100, Math.round(v)));
-}
-
 function effSummary(eff: OptionEffects, t: (k: TKey) => string): string {
   const parts: string[] = [];
   AXES.forEach((ax) => {
@@ -209,12 +207,13 @@ function effSummary(eff: OptionEffects, t: (k: TKey) => string): string {
   return parts.join(' · ') || '±0';
 }
 
-function Axis({ label, v }: { label: string; v: number }) {
+function Axis({ label, v }: { label: string; v: number | null }) {
+  const val = v ?? 0;
   return (
     <div className="axis">
       <span>{label}</span>
-      <b>{v}%</b>
-      <div className="axis-track"><div className="axis-fill" style={{ width: `${v}%`, background: v >= 70 ? '#2f9e63' : v >= 45 ? '#c8a45d' : '#c0564a' }} /></div>
+      <b>{v === null ? '—' : `${v}%`}</b>
+      <div className="axis-track">{v === null ? <div className="axis-na" /> : <div className="axis-fill" style={{ width: `${val}%`, background: val >= 70 ? '#2f9e63' : val >= 45 ? '#c8a45d' : '#c0564a' }} />}</div>
     </div>
   );
 }

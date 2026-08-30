@@ -193,6 +193,7 @@ main.dim{opacity:.55}
 .axis span{font-size:12px;font-weight:bold}.axis b{font-size:12px}
 .axis{display:grid;grid-template-columns:120px 40px 1fr;align-items:center;gap:10px}
 .axis-track{height:9px;border-radius:8px;background:#eceae2;overflow:hidden}.axis-fill{height:100%;border-radius:8px}
+.axis-na{height:100%;border-radius:8px;background:repeating-linear-gradient(90deg,#e4dfd2 0 8px,#d8d2c2 8px 16px)}
 .sim-critical{color:#a62929;font-weight:bold}
 .phone-ring{max-width:420px;margin:auto;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;padding:40px 24px}
 .ringing{width:90px;height:90px;display:grid;place-items:center;border-radius:50%;background:#eaf2f8;color:#1c5a7d;animation:pulse 1.4s infinite}

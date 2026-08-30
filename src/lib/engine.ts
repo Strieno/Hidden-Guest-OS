@@ -44,6 +44,63 @@ export function computeCategoryScores(answers: Record<string, Answer>, questions
   return out;
 }
 
+/* ---- Scenario & Phone scoring (per-axis 0-100%, final = mean of scored axes) ---- */
+
+type EffectsMap = Record<string, number>;
+
+export interface ScorableStage { options: Array<{ effects: EffectsMap }> }
+
+function clampPct(v: number): number {
+  return Math.max(0, Math.min(100, Math.round(v)));
+}
+
+export interface ScenarioScoreResult {
+  /** Per-axis percentage, or null when the axis was never tested by the scenario */
+  axes: Record<string, number | null>;
+  /** Final score = mean of the axes that were actually scored */
+  score: number;
+}
+
+/**
+ * Precise, symmetric scoring:
+ * For each axis, the best and worst option per stage are summed (max achievable /
+ * max damaging). Axis % = 50 ± 50·(totals/reference):
+ *   perfect run → 100%, all-worst run → 0%, neutral → 50%.
+ * Axes with no positive or negative options at all are excluded from the final score.
+ */
+export function scenarioScore(totals: EffectsMap, stages: ScorableStage[], axes: readonly string[]): ScenarioScoreResult {
+  const maxPos: EffectsMap = {};
+  const maxNeg: EffectsMap = {};
+  for (const ax of axes) { maxPos[ax] = 0; maxNeg[ax] = 0; }
+  for (const st of stages) {
+    for (const ax of axes) {
+      let best = 0;
+      let worst = 0;
+      for (const o of st.options) {
+        const v = o.effects[ax] ?? 0;
+        if (v > best) best = v;
+        if (v < worst) worst = v;
+      }
+      maxPos[ax] += best;
+      maxNeg[ax] += worst;
+    }
+  }
+  const out: Record<string, number | null> = {};
+  const scored: number[] = [];
+  for (const ax of axes) {
+    const t = totals[ax] ?? 0;
+    let v: number | null;
+    if (t > 0 && maxPos[ax] > 0) v = clampPct(50 + 50 * (t / maxPos[ax]));
+    else if (t < 0 && maxNeg[ax] < 0) v = clampPct(50 - 50 * (t / maxNeg[ax]));
+    else if (maxPos[ax] !== 0 || maxNeg[ax] !== 0) v = 50;
+    else v = null;
+    out[ax] = v;
+    if (v !== null) scored.push(v);
+  }
+  const score = scored.length ? Math.round(scored.reduce((s, v) => s + v, 0) / scored.length) : 50;
+  return { axes: out, score };
+}
+
 export function scoreOf(answers: Record<string, Answer>, questions: Question[]): { score: number; criticalFailures: number } {
   let max = 0;
   let got = 0;
@@ -55,8 +112,9 @@ export function scoreOf(answers: Record<string, Answer>, questions: Question[]):
     if (a === 'yes') got += q.weight;
     if (a === 'no' && q.critical) critical++;
   }
-  const raw = max ? (got / max) * 100 : 0;
-  const score = Math.max(0, Math.round(raw - critical * 5));
+  // Score = exact weighted percentage of correct answers (no hidden penalties).
+  // Critical failures are tracked and displayed separately.
+  const score = max ? Math.round((got / max) * 100) : 0;
   return { score, criticalFailures: critical };
 }
 

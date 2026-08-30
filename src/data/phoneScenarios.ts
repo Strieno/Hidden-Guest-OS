@@ -164,6 +164,7 @@ export const PHONE_SCENARIOS: PhoneScenario[] = [
         guestEn: 'Can I check out at 6pm instead of 2?',
         options: [
           { id: 'lc1', labelAr: 'سأتحقق من توفر الغرفة وأعود إليك خلال دقيقتين — التمديد حتى السادسة عادة متاح مجاناً للضيوف المباشرين.', labelEn: 'Let me check room availability and call you back in two minutes — extension to 6pm is usually free for direct guests.', effects: P(0, 0, 0, 10, 15, 5, 5), feedbackAr: '+15 دقة — تحقق ثم وعد محدد', feedbackEn: '+15 Accuracy — verify then make a specific promise' },
+          { id: 'lc2', labelAr: 'المغادرة الثانية ظهراً حصرياً، وأي تأخير عليه رسوم 200 ريال.', labelEn: 'Checkout is strictly 2pm, and any delay costs SAR 200.', effects: P(0, 0, 0, -10, -10, -5, -5), critical: true, feedbackAr: 'خطأ حاسم: لا ترفض بحدة — قدّم حلاً أو تحقق أولاً.', feedbackEn: 'CRITICAL: Never refuse harshly — offer a solution or verify first.' },
         ],
       },
     ],
@@ -220,6 +221,7 @@ export const PHONE_SCENARIOS: PhoneScenario[] = [
         guestEn: 'Can you clean the room now? I have guests in an hour.',
         options: [
           { id: 'hk1', labelAr: 'سأرسل فريق التدبير فوراً، ويمكنك متابعة الجاهزية من الاستقبال. نعتذر عن أي إزعاج.', labelEn: 'I will send housekeeping right away; you can follow readiness from reception. Apologies for any inconvenience.', effects: P(0, 0, 0, 10, 10, 5, 10), feedbackAr: '+10 استماع +10 إغلاق — استجابة سريعة', feedbackEn: '+10 Listening +10 Closing — quick response' },
+          { id: 'hk2', labelAr: 'التدبير المنزلي عنده جدول مزدحم، ما أقدر أضمن شيء.', labelEn: 'Housekeeping has a busy schedule; I cannot guarantee anything.', effects: P(0, 0, 0, -10, -5, -5, 0), feedbackAr: 'رد بلا التزام — استماع منخفض', feedbackEn: 'No commitment — low listening' },
         ],
       },
     ],
@@ -257,6 +259,7 @@ export const PHONE_SCENARIOS: PhoneScenario[] = [
         guestEn: 'I checked out today and left my watch in the room.',
         options: [
           { id: 'lf1', labelAr: 'سأتحقق من سجل المفقودات فوراً وأعاود الاتصال بك خلال دقائق. اسم الغرفة ورقمها لو سمحت؟', labelEn: 'I will check the lost-and-found log now and call you back in minutes. May I have your room number?', effects: P(0, 0, 0, 10, 15, 5, 10), feedbackAr: '+15 دقة — إجراء واضح ومتابعة مؤكدة', feedbackEn: '+15 Accuracy — clear process and confirmed follow-up' },
+          { id: 'lf2', labelAr: 'بعد ما تطلع من الغرفة ما نقدر نتحمل مسؤولية شيء.', labelEn: 'Once you check out we cannot take responsibility for anything.', effects: P(0, 0, 0, -15, -10, -5, -10), critical: true, feedbackAr: 'خطأ حاسم: المفقودات مسؤوليتنا — لا ترفض مساعدة الضيف.', feedbackEn: 'CRITICAL: Lost items are our responsibility — never refuse to help.' },
         ],
       },
     ],
@@ -275,6 +278,7 @@ export const PHONE_SCENARIOS: PhoneScenario[] = [
         guestEn: 'I need a wake-up call at 5:30am.',
         options: [
           { id: 'wu1', labelAr: 'تم تسجيل إيقاظ الساعة 5:30 صباحاً على الغرفة 214. سأكررها للتأكيد: 5:30 صباحاً صحيح؟', labelEn: 'Wake-up is set for 5:30am on room 214. Let me confirm: 5:30am, correct?', effects: P(0, 0, 0, 15, 15, 5, 5), feedbackAr: '+15 استماع +15 دقة — تأكيد مزدوج', feedbackEn: '+15 Listening +15 Accuracy — double confirmation' },
+          { id: 'wu2', labelAr: 'إن شاء الله أتذكر أنبهك.', labelEn: 'Hopefully I will remember to wake you.', effects: P(0, 0, 0, -5, -15, -10, 0), feedbackAr: 'لا تسجيل ولا تأكيد — دقة منخفضة', feedbackEn: 'No logging or confirmation — low accuracy' },
         ],
       },
     ],

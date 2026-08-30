@@ -4,6 +4,7 @@ import { useStore } from '../../hooks/useStore';
 import { useI18n, type TKey } from '../../lib/i18n';
 import { PHONE_SCENARIOS, type PhoneScenario, type PhoneOption, type PhoneEffects } from '../../data/phoneScenarios';
 import { DAILY_CHALLENGES } from '../../data/daily';
+import { scenarioScore } from '../../lib/engine';
 import { sfx } from '../../lib/sound';
 
 const AXES = ['greeting', 'hotel', 'employee', 'listening', 'accuracy', 'language', 'closing'] as const;
@@ -12,7 +13,7 @@ type State =
   | { phase: 'pick' }
   | { phase: 'ring' }
   | { phase: 'run'; scenario: PhoneScenario; stageIdx: number; chosen: PhoneOption | null; totals: PhoneEffects; critical: number }
-  | { phase: 'done'; scenario: PhoneScenario; totals: PhoneEffects; critical: number; score: number; passed: boolean; xp: number };
+  | { phase: 'done'; scenario: PhoneScenario; totals: PhoneEffects; critical: number; axes: Record<string, number | null>; score: number; passed: boolean; xp: number };
 
 const ZERO: PhoneEffects = { greeting: 0, hotel: 0, employee: 0, listening: 0, accuracy: 0, language: 0, closing: 0 };
 
@@ -75,13 +76,16 @@ export function PhoneSim() {
   };
 
   const finish = (scenario: PhoneScenario, totals: PhoneEffects, critical: number) => {
-    const sum = AXES.reduce((s, ax) => s + totals[ax], 0);
-    const score = clamp(50 + Math.round(sum / AXES.length));
+    // Precise scoring: per-axis 0-100 (perfect call = 100%, all-worst = 0%), final = mean of scored axes
+    const stages = scenario.stages as unknown as Array<{ options: Array<{ effects: Record<string, number> }> }>;
+    const { axes, score } = scenarioScore(totals as unknown as Record<string, number>, stages, AXES);
+    const categories: Record<string, number> = {};
+    for (const [k, v] of Object.entries(axes)) if (v !== null) categories[k] = v;
     const passed = !(critical > 0 || score < 60);
     const res = recordPhoneSession({
       scenarioId: scenario.id,
       score,
-      categories: Object.fromEntries(AXES.map((ax) => [ax, clamp(50 + totals[ax])])) as Record<string, number>,
+      categories,
       criticalMistakes: critical,
       passed,
     });
@@ -92,7 +96,7 @@ export function PhoneSim() {
       toast(`${tr('challenge.done')} · +25 XP`);
     }
     if (passed) sfx.complete(); else sfx.incorrect();
-    setState({ phase: 'done', scenario, totals, critical, score, passed, xp: res.xp });
+    setState({ phase: 'done', scenario, totals, critical, axes, score, passed, xp: res.xp });
   };
 
   if (state.phase === 'pick') {
@@ -131,7 +135,7 @@ export function PhoneSim() {
   }
 
   if (state.phase === 'done') {
-    const { scenario, score, critical, passed, xp } = state;
+    const { scenario, axes, score, critical, passed, xp } = state;
     return (
       <div className="page">
         <PageTitle over="CALL RESULT" title={t('sim.result')} text={lang === 'ar' ? scenario.titleAr : scenario.titleEn} />
@@ -139,13 +143,13 @@ export function PhoneSim() {
           <strong>{score}%</strong>
           <h2>{passed ? (lang === 'ar' ? 'ممتاز — مكالمة احترافية' : 'Excellent — professional call') : (lang === 'ar' ? 'يحتاج تحسيناً' : 'Needs improvement')}</h2>
           <div className="axis-grid">
-            <Axis label={t('phone.axis.greeting')} v={clamp(50 + state.totals.greeting)} />
-            <Axis label={t('phone.axis.hotel')} v={clamp(50 + state.totals.hotel)} />
-            <Axis label={t('phone.axis.employee')} v={clamp(50 + state.totals.employee)} />
-            <Axis label={t('phone.axis.listening')} v={clamp(50 + state.totals.listening)} />
-            <Axis label={t('phone.axis.accuracy')} v={clamp(50 + state.totals.accuracy)} />
-            <Axis label={t('phone.axis.language')} v={clamp(50 + state.totals.language)} />
-            <Axis label={t('phone.axis.closing')} v={clamp(50 + state.totals.closing)} />
+            <Axis label={t('phone.axis.greeting')} v={axes.greeting} />
+            <Axis label={t('phone.axis.hotel')} v={axes.hotel} />
+            <Axis label={t('phone.axis.employee')} v={axes.employee} />
+            <Axis label={t('phone.axis.listening')} v={axes.listening} />
+            <Axis label={t('phone.axis.accuracy')} v={axes.accuracy} />
+            <Axis label={t('phone.axis.language')} v={axes.language} />
+            <Axis label={t('phone.axis.closing')} v={axes.closing} />
           </div>
           {critical > 0 && <p className="sim-critical">⚠ {t('sim.critical')} × {critical}</p>}
           <p className="xp-gain">+{xp} XP</p>
@@ -205,10 +209,6 @@ function addEff(a: PhoneEffects, b: PhoneEffects): PhoneEffects {
   return out;
 }
 
-function clamp(v: number): number {
-  return Math.max(0, Math.min(100, Math.round(v)));
-}
-
 function phoneEffSummary(eff: PhoneEffects, t: (k: TKey) => string): string {
   const parts: string[] = [];
   AXES.forEach((ax) => {
@@ -218,12 +218,13 @@ function phoneEffSummary(eff: PhoneEffects, t: (k: TKey) => string): string {
   return parts.join(' · ') || '±0';
 }
 
-function Axis({ label, v }: { label: string; v: number }) {
+function Axis({ label, v }: { label: string; v: number | null }) {
+  const val = v ?? 0;
   return (
     <div className="axis">
       <span>{label}</span>
-      <b>{v}%</b>
-      <div className="axis-track"><div className="axis-fill" style={{ width: `${v}%`, background: v >= 70 ? '#2f9e63' : v >= 45 ? '#c8a45d' : '#c0564a' }} /></div>
+      <b>{v === null ? '—' : `${v}%`}</b>
+      <div className="axis-track">{v === null ? <div className="axis-na" /> : <div className="axis-fill" style={{ width: `${val}%`, background: val >= 70 ? '#2f9e63' : val >= 45 ? '#c8a45d' : '#c0564a' }} />}</div>
     </div>
   );
 }

@@ -94,6 +94,7 @@ export interface SimSession {
   accuracy: number;
   communication: number;
   compliance: number;
+  categories: Record<string, number>;
   criticalMistakes: number;
   passed: boolean;
 }
