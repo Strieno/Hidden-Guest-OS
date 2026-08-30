@@ -130,6 +130,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <blockquote>{t('app.tagline')}</blockquote>
           <div className="side-local"><span /> {t('footer.local')}</div>
         </aside>
+        {mobileOpen && <button className="side-backdrop" aria-label={t('close')} onClick={() => setMobileOpen(false)} />}
         <main className={mobileOpen ? 'dim' : ''}>{children}</main>
       </div>
     </>
